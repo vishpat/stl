@@ -22,12 +22,12 @@ pub mod stl {
 
         pub fn get_format(stl_file_path: String) -> FileFormat {
             let mut stl_file = File::open(stl_file_path).expect("Unable to open the stl file");
-            let mut buf = [0; 5];
+            let mut buf = [0; 80];
             
             stl_file.read_exact(&mut buf).expect("Unable to read first 5 bytes");
             let header = String::from_utf8(buf.to_vec()).expect("Unable convert read buffer to string");
            
-            if header.to_lowercase() == "solid" {
+            if header.trim().starts_with("solid") {
                 FileFormat::Text
             } else {
                 FileFormat::Binary

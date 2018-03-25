@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use stl;
-
+    
     #[test]
     fn binary_format_check() {
         let fmt = stl::parser::get_format("/home/vpati011/Downloads/ship_v2_top.stl".to_string());
@@ -43,8 +43,18 @@ pub mod stl {
             InvalidFormat(std::string::FromUtf8Error),
         }
 
-        pub enum ModelError {
-            STLFileInvalid,
+        pub fn get_format(stl_file_path: String) -> Result<FileFormat, FileFormatError> {
+            let mut stl_file = File::open(stl_file_path).map_err(FileFormatError::InvalidPath)?;
+            let mut buf = [0; HEADER_SIZE];
+            
+            stl_file.read_exact(&mut buf).map_err(FileFormatError::InvalidRead)?;
+            let header = String::from_utf8(buf.to_vec()).map_err(FileFormatError::InvalidFormat)?;
+           
+            if header.trim().to_lowercase().starts_with("solid") {
+                Ok(FileFormat::Text)
+            } else {
+                Ok(FileFormat::Binary)
+            }
         }
 
         pub struct Vertex {
@@ -58,20 +68,46 @@ pub mod stl {
         }
 
         pub struct Model {
+            min_x: f32,
+            max_x: f32,
+
+            min_y: f32,
+            max_y: f32,
+
+            min_z: f32,
+            max_z: f32,
+
             triangles: Vec<Triangle>,
         }
 
-        pub fn get_format(stl_file_path: String) -> Result<FileFormat, FileFormatError> {
-            let mut stl_file = File::open(stl_file_path).map_err(FileFormatError::InvalidPath)?;
+        pub enum ModelError {
+            STLFileInvalid(FileFormatError),
+            InvalidPath(std::io::Error),
+            InvalidRead(std::io::Error),
+            InvalidFormat(std::string::FromUtf8Error),
+        }
+
+        pub fn load_file(stl_file_path: String) -> Result<Model, ModelError> {
+            let stl_fmt = get_format(stl_file_path).map_err(ModelError::STLFileInvalid)?;
+            match stl_fmt {
+                Binary => load_bin_file(stl_file_path),
+                Text => panic!("Not implemented")
+            }
+        }
+
+        fn load_bin_file(stl_file_path: String) -> Result<Model, ModelError> {
+            const U32_SIZE: usize = 4;
+            let mut stl_file = File::open(stl_file_path).map_err(ModelError::InvalidPath)?;
             let mut buf = [0; HEADER_SIZE];
             
-            stl_file.read_exact(&mut buf).map_err(FileFormatError::InvalidRead)?;
-            let header = String::from_utf8(buf.to_vec()).map_err(FileFormatError::InvalidFormat)?;
-           
-            if header.trim().to_lowercase().starts_with("solid") {
-                Ok(FileFormat::Text)
-            } else {
-                Ok(FileFormat::Binary)
+            stl_file.read_exact(&mut buf).map_err(ModelError::InvalidRead)?;
+            let header = String::from_utf8(buf.to_vec()).map_err(ModelError::InvalidFormat)?;
+            
+            let mut triangle_cnt = [0; U32_SIZE];
+            stl_file.read_exact(&mut triangle_cnt).map_err(ModelError::InvalidRead)?;
+             
+            for i in 0..triangle_cnt {
+                println!("triangle {}", i);
             }
         }
     }

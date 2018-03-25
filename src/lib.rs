@@ -1,3 +1,5 @@
+extern crate byteorder;
+
 #[cfg(test)]
 mod tests {
     use stl;
@@ -24,11 +26,10 @@ mod tests {
 pub mod stl {
 
     pub mod parser {
-
+ 
         use std::fs::File;
         use std::io::Read;
         use std;
-
         const HEADER_SIZE: usize = 80;
 
         #[derive(Debug)]
@@ -95,6 +96,9 @@ pub mod stl {
             }
         }
 
+        use byteorder::LittleEndian;
+        use byteorder::ByteOrder;
+
         fn load_bin_file(stl_file_path: String) -> Result<Model, ModelError> {
             const U32_SIZE: usize = 4;
             let mut stl_file = File::open(stl_file_path).map_err(ModelError::InvalidPath)?;
@@ -103,9 +107,10 @@ pub mod stl {
             stl_file.read_exact(&mut buf).map_err(ModelError::InvalidRead)?;
             let header = String::from_utf8(buf.to_vec()).map_err(ModelError::InvalidFormat)?;
             
-            let mut triangle_cnt = [0; U32_SIZE];
-            stl_file.read_exact(&mut triangle_cnt).map_err(ModelError::InvalidRead)?;
-             
+            let mut u32_buf = [0; U32_SIZE];
+            stl_file.read_exact(&mut u32_buf).map_err(ModelError::InvalidRead)?;
+            let triangle_cnt = LittleEndian::read_u32(&mut u32_buf); 
+
             for i in 0..triangle_cnt {
                 println!("triangle {}", i);
             }

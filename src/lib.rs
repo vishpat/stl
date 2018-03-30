@@ -19,7 +19,9 @@ mod tests {
         match stl::parser::load_file(&"/home/vpati011/Downloads/ship_v2_top.stl".to_string()) {
             Ok(model) => { 
                 println!("Triangle count");
-                (*model).iter().inspect(|triangle| println!("{:?}", triangle));
+                for triangle in (*model).iter() {
+                    println!("triangle {:?}", triangle);
+                }
             }
             _ => panic!("Failed to parse the binary STL file"),
         }
@@ -105,7 +107,7 @@ pub mod stl {
         }
         
         impl Model {
-            fn iter(&self) -> TriangleIterator {
+            pub fn iter(&self) -> TriangleIterator {
                 TriangleIterator{index:0, model: self}
             }
         }
@@ -117,12 +119,15 @@ pub mod stl {
 
         impl <'a>Iterator for TriangleIterator<'a> {
             
-            type Item = Box<Triangle>;
+            type Item = &'a Box<Triangle>;
 
-            fn next(&mut self) -> Option<Box<Triangle>> {
+            fn next(&mut self) -> Option<&'a Box<Triangle>> {
                 if self.index < self.model.triangles.len() {
                     match self.model.triangles.get(self.index) {
-                        Some(triangle) => Some(*triangle),
+                        Some(triangle) => {
+                                            self.index += 1;
+                                            Some(triangle)
+                                          },
                         None => None
                     }
                 } else {

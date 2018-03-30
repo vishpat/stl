@@ -3,7 +3,8 @@ extern crate byteorder;
 #[cfg(test)]
 mod tests {
     use stl;
-    
+    use std::slice::Iter;
+
     #[test]
     fn binary_format_check() {
         let fmt = stl::parser::get_format(&"/home/vpati011/Downloads/ship_v2_top.stl".to_string());
@@ -16,7 +17,10 @@ mod tests {
     #[test]
     fn binary_stl_load() {
         match stl::parser::load_file(&"/home/vpati011/Downloads/ship_v2_top.stl".to_string()) {
-            Ok(model) => println!("Triangle count"),
+            Ok(model) => { 
+                println!("Triangle count");
+                (*model).iter().inspect(|triangle| println!("{:?}", triangle));
+            }
             _ => panic!("Failed to parse the binary STL file"),
         }
     }
@@ -97,16 +101,34 @@ pub mod stl {
 
         #[derive(Debug)]
         pub struct Model {
-            min_x: f32,
-            max_x: f32,
-
-            min_y: f32,
-            max_y: f32,
-
-            min_z: f32,
-            max_z: f32,
-
             triangles: Vec<Box<Triangle>>,
+        }
+        
+        impl Model {
+            fn iter(&self) -> TriangleIterator {
+                TriangleIterator{index:0, model: self}
+            }
+        }
+
+        pub struct TriangleIterator<'a> {
+            index: usize, 
+            model: &'a Model,
+        }
+
+        impl <'a>Iterator for TriangleIterator<'a> {
+            
+            type Item = Box<Triangle>;
+
+            fn next(&mut self) -> Option<Box<Triangle>> {
+                if self.index < self.model.triangles.len() {
+                    match self.model.triangles.get(self.index) {
+                        Some(triangle) => Some(*triangle),
+                        None => None
+                    }
+                } else {
+                    None
+                }
+            }
         }
 
         pub fn load_file(stl_file_path: &String) -> Result<Box<Model>, Error> {
@@ -121,9 +143,7 @@ pub mod stl {
         use byteorder::ByteOrder;
 
         fn load_bin_file(stl_file_path: &String) -> Result<Box<Model>, Error> {
-            let mut model = Box::new(Model{min_x: 0.0, min_y: 0.0, min_z: 0.0, 
-                                           max_x: 0.0, max_y: 0.0, max_z: 0.0, 
-                                           triangles: Vec::new()});
+            let mut model = Box::new(Model{triangles: Vec::new()});
             const BUF32_SIZE: usize = 4;
             let mut stl_file = File::open(stl_file_path).map_err(Error::InvalidPath)?;
             let mut buf = [0; HEADER_SIZE];
@@ -134,7 +154,7 @@ pub mod stl {
             let mut buf32 = [0; BUF32_SIZE];
             stl_file.read_exact(&mut buf32).map_err(Error::InvalidRead)?;
             let triangle_cnt = LittleEndian::read_u32(&mut buf32); 
-            
+           
             for i in 0..triangle_cnt {
 
                 /* Normal Vector */

@@ -171,7 +171,7 @@ pub mod stl {
 
             let buf = triangle_byte_vec.as_slice();
             let mut offset = HEADER_SIZE;
-            let triangle_cnt = LittleEndian::read_u32(&buf[offset..offset + 4]); 
+            let triangle_cnt = LittleEndian::read_u32(&buf[offset..offset + F32_SIZE]); 
             offset += F32_SIZE; 
         
             for triangle_idx in 0..triangle_cnt {
@@ -179,24 +179,24 @@ pub mod stl {
 
                 /* Normal Vector */
                 let mut normal:Vertex = Vertex{x:0.0, y:0.0, z:0.0};
-                triangle.normal.x = LittleEndian::read_f32(&buf[offset..offset + 4]);
+                triangle.normal.x = LittleEndian::read_f32(&buf[offset..offset + F32_SIZE]);
                 offset += F32_SIZE;
                 
-                triangle.normal.y = LittleEndian::read_f32(&buf[offset..offset + 4]);
+                triangle.normal.y = LittleEndian::read_f32(&buf[offset..offset + F32_SIZE]);
                 offset += F32_SIZE;
                 
-                triangle.normal.z = LittleEndian::read_f32(&buf[offset..offset + 4]);
+                triangle.normal.z = LittleEndian::read_f32(&buf[offset..offset + F32_SIZE]);
                 offset += F32_SIZE;
 
                 /* Triangle Side vertices */
                 for v in 0..VERTEX_CNT {
-                    triangle.vertex[v].x = LittleEndian::read_f32(&buf[offset..offset + 4]);
+                    triangle.vertex[v].x = LittleEndian::read_f32(&buf[offset..offset + F32_SIZE]);
                     offset += F32_SIZE;
 
-                    triangle.vertex[v].y = LittleEndian::read_f32(&buf[offset..offset + 4]);
+                    triangle.vertex[v].y = LittleEndian::read_f32(&buf[offset..offset + F32_SIZE]);
                     offset += F32_SIZE;
 
-                    triangle.vertex[v].z = LittleEndian::read_f32(&buf[offset..offset + 4]);
+                    triangle.vertex[v].z = LittleEndian::read_f32(&buf[offset..offset + F32_SIZE]);
                     offset += F32_SIZE;
                 }
 

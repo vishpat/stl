@@ -29,7 +29,6 @@ mod tests {
         }
     }
 
-
     #[test]
     fn text_format_check() {
         let fmt = stl::parser::get_format(&"/home/vpati011/Downloads/cube.stl".to_string());
@@ -50,6 +49,7 @@ pub mod stl {
         use std::io::Read;
         use std;
         const HEADER_SIZE: usize = 80;
+        const VERTEX_CNT: usize = 3;
 
         pub enum FileFormat {
             Text,
@@ -86,7 +86,7 @@ pub mod stl {
         #[derive(Debug)]
         pub struct Triangle {
             normal: Vertex,
-            vertex:[Vertex; 3],
+            vertex:[Vertex; VERTEX_CNT],
         }
 
         impl Triangle {
@@ -95,7 +95,7 @@ pub mod stl {
                 Box::new(Triangle{normal: Vertex{x:0.0, y:0.0, z:0.0}, vertex: Triangle::new_vertex()})
             }
 
-            fn new_vertex() -> [Vertex; 3] {
+            fn new_vertex() -> [Vertex; VERTEX_CNT] {
                 [
                     Vertex{x:0.0, y:0.0, z:0.0},
                     Vertex{x:0.0, y:0.0, z:0.0},
@@ -161,44 +161,47 @@ pub mod stl {
         use byteorder::ByteOrder;
 
         fn load_bin_file(stl_file_path: &String) -> Result<Box<Model>, Error> {
+            
             let mut model = Box::new(Model{triangles: Vec::new()});
-            const BUF32_SIZE: usize = 4;
+            const F32_SIZE: usize = 4;
+
+            let mut triangle_byte_vec = Vec::new();
             let mut stl_file = File::open(stl_file_path).map_err(Error::InvalidPath)?;
-            
-            let mut buf:[u8; HEADER_SIZE] = [0; HEADER_SIZE];
-            stl_file.read_exact(&mut buf).map_err(Error::InvalidRead)?;
-            let header = String::from_utf8(buf.to_vec()).map_err(Error::InvalidFormat)?;
-            
-            let mut buf32:[u8; BUF32_SIZE] = [0; BUF32_SIZE];
-            stl_file.read_exact(&mut buf32).map_err(Error::InvalidRead)?;
-            let triangle_cnt = LittleEndian::read_u32(&mut buf32); 
-           
+            stl_file.read_to_end(&mut triangle_byte_vec).map_err(Error::InvalidRead)?;
+
+            let buf = triangle_byte_vec.as_slice();
+            let mut offset = HEADER_SIZE;
+            let triangle_cnt = LittleEndian::read_u32(&buf[offset..offset + 4]); 
+            offset += F32_SIZE; 
+        
             for triangle_idx in 0..triangle_cnt {
                 let mut triangle = Triangle::new();
 
                 /* Normal Vector */
                 let mut normal:Vertex = Vertex{x:0.0, y:0.0, z:0.0};
-                stl_file.read_exact(&mut buf32).map_err(Error::InvalidRead)?;
-                triangle.normal.x = LittleEndian::read_f32(&mut buf32);
-
-                stl_file.read_exact(&mut buf32).map_err(Error::InvalidRead)?;
-                triangle.normal.y = LittleEndian::read_f32(&mut buf32);
-
-                stl_file.read_exact(&mut buf32).map_err(Error::InvalidRead)?;
-                triangle.normal.z = LittleEndian::read_f32(&mut buf32);
-
-                for v in 0..3 {
-                    stl_file.read_exact(&mut buf32).map_err(Error::InvalidRead)?;
-                    triangle.vertex[v].x = LittleEndian::read_f32(&mut buf32); 
-
-                    stl_file.read_exact(&mut buf32).map_err(Error::InvalidRead)?;
-                    triangle.vertex[v].y = LittleEndian::read_f32(&mut buf32); 
-                    
-                    stl_file.read_exact(&mut buf32).map_err(Error::InvalidRead)?;
-                    triangle.vertex[v].z = LittleEndian::read_f32(&mut buf32); 
-                    
-               }
+                triangle.normal.x = LittleEndian::read_f32(&buf[offset..offset + 4]);
+                offset += F32_SIZE;
                 
+                triangle.normal.y = LittleEndian::read_f32(&buf[offset..offset + 4]);
+                offset += F32_SIZE;
+                
+                triangle.normal.z = LittleEndian::read_f32(&buf[offset..offset + 4]);
+                offset += F32_SIZE;
+
+                /* Triangle Side vertices */
+                for v in 0..VERTEX_CNT {
+                    triangle.vertex[v].x = LittleEndian::read_f32(&buf[offset..offset + 4]);
+                    offset += F32_SIZE;
+
+                    triangle.vertex[v].y = LittleEndian::read_f32(&buf[offset..offset + 4]);
+                    offset += F32_SIZE;
+
+                    triangle.vertex[v].z = LittleEndian::read_f32(&buf[offset..offset + 4]);
+                    offset += F32_SIZE;
+                }
+
+                offset += 2;
+
                 model.triangles.push(triangle);
             }
 

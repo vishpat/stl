@@ -7,20 +7,22 @@ mod tests {
 
     #[test]
     fn binary_format_check() {
-        let fmt = stl::parser::get_format(&"/home/vpati011/Downloads/ship_v2_top.stl".to_string());
+        let fmt = stl::parser::get_format(&"/home/vpati011/Downloads/HalfDonut.stl".to_string());
         match fmt {
             Ok(format) => println!("Pass"),
-            _ => panic!("Test failed for detect the binary format for the STL file"),
+            _ => panic!("Test failed to detect the binary format for the STL file"),
         }
     }
 
     #[test]
     fn binary_stl_load() {
-        match stl::parser::load_file(&"/home/vpati011/Downloads/ship_v2_top.stl".to_string()) {
+        match stl::parser::load_file(&"/home/vpati011/Downloads/HalfDonut.stl".to_string()) {
             Ok(model) => { 
                 println!("Triangle count");
+                let mut idx = 0;
                 for triangle in (*model).iter() {
-                    println!("triangle {:?}", triangle);
+                    println!("Triangle {}\n{}", idx, triangle);
+                    idx += 1;
                 }
             }
             _ => panic!("Failed to parse the binary STL file"),
@@ -80,16 +82,17 @@ pub mod stl {
             y: f32,
             z: f32,
         }
-        
+
         #[derive(Debug)]
-        pub struct Triangle { 
+        pub struct Triangle {
+            normal: Vertex,
             vertex:[Vertex; 3],
         }
 
         impl Triangle {
 
             fn new() -> Box<Triangle> {
-                Box::new(Triangle{vertex: Triangle::new_vertex()})
+                Box::new(Triangle{normal: Vertex{x:0.0, y:0.0, z:0.0}, vertex: Triangle::new_vertex()})
             }
 
             fn new_vertex() -> [Vertex; 3] {
@@ -98,6 +101,16 @@ pub mod stl {
                     Vertex{x:0.0, y:0.0, z:0.0},
                     Vertex{x:0.0, y:0.0, z:0.0},
                 ]
+            }
+        }
+
+        impl std::fmt::Display for Triangle {
+            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(f, "{:.2} {:.2} {:.2}\n{:.2} {:.2} {:.2}\n{:.2} {:.2} {:.2}\n{:.2} {:.2} {:.2}",
+                       self.normal.x, self.normal.y, self.normal.z,
+                       self.vertex[0].x, self.vertex[0].y, self.vertex[0].z,
+                       self.vertex[1].x, self.vertex[1].y, self.vertex[1].z,
+                       self.vertex[2].x, self.vertex[2].y, self.vertex[2].z )
             }
         }
 
@@ -151,23 +164,29 @@ pub mod stl {
             let mut model = Box::new(Model{triangles: Vec::new()});
             const BUF32_SIZE: usize = 4;
             let mut stl_file = File::open(stl_file_path).map_err(Error::InvalidPath)?;
-            let mut buf = [0; HEADER_SIZE];
             
+            let mut buf:[u8; HEADER_SIZE] = [0; HEADER_SIZE];
             stl_file.read_exact(&mut buf).map_err(Error::InvalidRead)?;
             let header = String::from_utf8(buf.to_vec()).map_err(Error::InvalidFormat)?;
             
-            let mut buf32 = [0; BUF32_SIZE];
+            let mut buf32:[u8; BUF32_SIZE] = [0; BUF32_SIZE];
             stl_file.read_exact(&mut buf32).map_err(Error::InvalidRead)?;
             let triangle_cnt = LittleEndian::read_u32(&mut buf32); 
            
-            for i in 0..triangle_cnt {
+            for triangle_idx in 0..triangle_cnt {
+                let mut triangle = Triangle::new();
 
                 /* Normal Vector */
-                for normal in 0..3 {
-                    stl_file.read_exact(&mut buf32).map_err(Error::InvalidRead)?;
-                }
-                
-                let mut triangle = Triangle::new();
+                let mut normal:Vertex = Vertex{x:0.0, y:0.0, z:0.0};
+                stl_file.read_exact(&mut buf32).map_err(Error::InvalidRead)?;
+                triangle.normal.x = LittleEndian::read_f32(&mut buf32);
+
+                stl_file.read_exact(&mut buf32).map_err(Error::InvalidRead)?;
+                triangle.normal.y = LittleEndian::read_f32(&mut buf32);
+
+                stl_file.read_exact(&mut buf32).map_err(Error::InvalidRead)?;
+                triangle.normal.z = LittleEndian::read_f32(&mut buf32);
+
                 for v in 0..3 {
                     stl_file.read_exact(&mut buf32).map_err(Error::InvalidRead)?;
                     triangle.vertex[v].x = LittleEndian::read_f32(&mut buf32); 
@@ -177,7 +196,8 @@ pub mod stl {
                     
                     stl_file.read_exact(&mut buf32).map_err(Error::InvalidRead)?;
                     triangle.vertex[v].z = LittleEndian::read_f32(&mut buf32); 
-                }
+                    
+               }
                 
                 model.triangles.push(triangle);
             }

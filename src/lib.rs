@@ -27,7 +27,7 @@ mod tests {
 
     #[test]
     fn binary_stl_load() {
-        match stl::parser::load_file(&"/home/vpati011/Downloads/HalfDonut.stl".to_string()) {
+        match stl::parser::load_file(&bin_stl_file.to_string()) {
             Ok(model) => { 
                 println!("Triangle count");
                 let mut idx = 0;
@@ -42,7 +42,7 @@ mod tests {
 
     #[test]
     fn text_stl_load() {
-        match stl::parser::load_file(&"/home/vpati011/Downloads/HalfDonut.txt.stl".to_string()) {
+        match stl::parser::load_file(&txt_stl_file.to_string()) {
             Ok(model) => { 
                 println!("Triangle count");
                 let mut idx = 0;

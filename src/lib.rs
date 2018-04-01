@@ -198,8 +198,7 @@ pub mod stl {
                 }
 
                 if tokens[0] == "endfacet" {
-                    let mut triangle2 = triangle;
-                    model.triangles.push(Box::new(triangle2));
+                    model.triangles.push(Box::new(triangle));
                 }
             }
 

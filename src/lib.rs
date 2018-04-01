@@ -49,11 +49,13 @@ mod tests {
                     idx += 1;
                 }
             }
-            _ => panic!("Failed to parse the binary STL file"),
+            _ => panic!("Failed to parse the text STL file"),
         }
     }
 }
 
+/// A RUST module to parse STL files. The format of the STL 
+/// file can be found at https://en.wikipedia.org/wiki/STL_(file_format)
 pub mod stl {
 
     pub mod parser {
@@ -66,24 +68,29 @@ pub mod stl {
         const VERTEX_CNT: usize = 3;
         const F32_SIZE: usize = 4;
 
+        /// Types of STL file
         #[derive(Debug)]
         pub enum FileFormat {
             Text,
             Binary,
         }
 
+        /// Possible Errors while parsing the STL file
         pub enum Error {
             InvalidPath(std::io::Error),
             InvalidRead(std::io::Error),
             InvalidFormat(std::string::FromUtf8Error),
         }
 
+        /// Determines if an STL file is in text or a binary format
         pub fn get_format(stl_file_path: &String) -> Result<FileFormat, Error> {
-            let mut stl_file = File::open(stl_file_path).map_err(Error::InvalidPath)?;
+            let mut stl_file = File::open(stl_file_path).map_err(self::Error::InvalidPath)?;
             let mut buf = [0; HEADER_SIZE];
 
-            stl_file.read_exact(&mut buf).map_err(Error::InvalidRead)?;
-            let header = String::from_utf8(buf.to_vec()).map_err(Error::InvalidFormat)?;
+            stl_file
+                .read_exact(&mut buf)
+                .map_err(self::Error::InvalidRead)?;
+            let header = String::from_utf8(buf.to_vec()).map_err(self::Error::InvalidFormat)?;
 
             if header.trim().to_lowercase().starts_with("solid") {
                 Ok(FileFormat::Text)
@@ -92,6 +99,7 @@ pub mod stl {
             }
         }
 
+        /// Represents a 3D vertex of a triangle
         #[derive(Debug, Copy, Clone)]
         pub struct Vertex {
             x: f32,
@@ -99,6 +107,7 @@ pub mod stl {
             z: f32,
         }
 
+        /// Represents a triangle that makes up the 3D object
         #[derive(Debug, Copy, Clone)]
         pub struct Triangle {
             normal: Vertex,
@@ -159,12 +168,15 @@ pub mod stl {
             }
         }
 
+        /// Representation of the 3D object in terms of triangles 
         #[derive(Debug)]
         pub struct Model {
             triangles: Vec<Box<Triangle>>,
         }
 
         impl Model {
+            /// Iterator to iterate over all the triangles that
+            /// make up the 3D object
             pub fn iter(&self) -> TriangleIterator {
                 TriangleIterator {
                     index: 0,
@@ -173,6 +185,8 @@ pub mod stl {
             }
         }
 
+        /// The iterator for all the triangles making up the 3D 
+        /// object
         pub struct TriangleIterator<'a> {
             index: usize,
             model: &'a Model,
@@ -196,6 +210,7 @@ pub mod stl {
             }
         }
 
+        /// Load a STL file and return the Model struct
         pub fn load_file(stl_file_path: &String) -> Result<Box<Model>, Error> {
             let stl_fmt = get_format(stl_file_path)?;
             println!("format {:?}", stl_fmt);
@@ -209,7 +224,7 @@ pub mod stl {
         use std::io::BufRead;
 
         fn load_txt_file(stl_file_path: &String) -> Result<Box<Model>, Error> {
-            let stl_file = File::open(stl_file_path).map_err(Error::InvalidPath)?;
+            let stl_file = File::open(stl_file_path).map_err(self::Error::InvalidPath)?;
             let mut file = BufReader::new(&stl_file);
 
             let mut model = Box::new(Model {
@@ -227,7 +242,7 @@ pub mod stl {
 
             loop {
                 let mut line = String::new();
-                file.read_line(&mut line).map_err(Error::InvalidRead)?;
+                file.read_line(&mut line).map_err(self::Error::InvalidRead)?;
 
                 if line.is_empty() {
                     break;
@@ -276,12 +291,12 @@ pub mod stl {
         }
 
         fn load_bin_file(stl_file_path: &String) -> Result<Box<Model>, Error> {
-            let mut stl_file = File::open(stl_file_path).map_err(Error::InvalidPath)?;
+            let mut stl_file = File::open(stl_file_path).map_err(self::Error::InvalidPath)?;
 
             let mut triangle_byte_vec = Vec::new();
             stl_file
                 .read_to_end(&mut triangle_byte_vec)
-                .map_err(Error::InvalidRead)?;
+                .map_err(self::Error::InvalidRead)?;
             let buf = triangle_byte_vec.as_slice();
 
             let mut offset = HEADER_SIZE;

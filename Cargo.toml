@@ -3,9 +3,9 @@ name = "stl"
 version = "0.1.0"
 authors = ["Vishal Patil <vishpat@gmail.com>"]
 license = "MIT"
-homepage = ""
-repository = ""
-documentation = ""
+homepage = "https://github.com/vishpat/stl"
+repository = "https://github.com/vishpat/stl"
+documentation = "https://github.com/vishpat/stl"
 description = """
 RUST crate to parse STL files used for 3D printing.
 """

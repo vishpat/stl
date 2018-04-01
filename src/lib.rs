@@ -113,11 +113,11 @@ pub mod stl {
                         y: 0.0,
                         z: 0.0,
                     },
-                    vertex: Triangle::new_vertex(),
+                    vertex: Triangle::new_vertices(),
                 })
             }
 
-            fn new_vertex() -> [Vertex; VERTEX_CNT] {
+            fn new_vertices() -> [Vertex; VERTEX_CNT] {
                 [
                     Vertex {
                         x: 0.0,
@@ -221,7 +221,7 @@ pub mod stl {
                     y: 0.0,
                     z: 0.0,
                 },
-                vertex: Triangle::new_vertex(),
+                vertex: Triangle::new_vertices(),
             };
             let mut vertex: usize = 0;
 

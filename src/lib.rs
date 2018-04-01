@@ -4,8 +4,8 @@ extern crate byteorder;
 mod tests {
     use stl;
 
-    const bin_stl_file:&str = "/home/vishpat/Downloads/HalfDonut.stl";
-    const txt_stl_file:&str = "/home/vishpat/Downloads/HalfDonut.txt.stl";
+    const bin_stl_file: &str = "/home/vishpat/Downloads/HalfDonut.stl";
+    const txt_stl_file: &str = "/home/vishpat/Downloads/HalfDonut.txt.stl";
 
     #[test]
     fn binary_format_check() {
@@ -28,7 +28,7 @@ mod tests {
     #[test]
     fn binary_stl_load() {
         match stl::parser::load_file(&bin_stl_file.to_string()) {
-            Ok(model) => { 
+            Ok(model) => {
                 let mut idx = 0;
                 for triangle in (*model).iter() {
                     println!("Triangle {}\n{}", idx, triangle);
@@ -42,7 +42,7 @@ mod tests {
     #[test]
     fn text_stl_load() {
         match stl::parser::load_file(&txt_stl_file.to_string()) {
-            Ok(model) => { 
+            Ok(model) => {
                 let mut idx = 0;
                 for triangle in (*model).iter() {
                     println!("Triangle {}\n{}", idx, triangle);
@@ -57,7 +57,7 @@ mod tests {
 pub mod stl {
 
     pub mod parser {
- 
+
         use std::fs::File;
         use std::io::Read;
         use std;
@@ -81,10 +81,10 @@ pub mod stl {
         pub fn get_format(stl_file_path: &String) -> Result<FileFormat, Error> {
             let mut stl_file = File::open(stl_file_path).map_err(Error::InvalidPath)?;
             let mut buf = [0; HEADER_SIZE];
-            
+
             stl_file.read_exact(&mut buf).map_err(Error::InvalidRead)?;
             let header = String::from_utf8(buf.to_vec()).map_err(Error::InvalidFormat)?;
-           
+
             if header.trim().to_lowercase().starts_with("solid") {
                 Ok(FileFormat::Text)
             } else {
@@ -92,41 +92,70 @@ pub mod stl {
             }
         }
 
-        #[derive(Debug,Copy,Clone)]
+        #[derive(Debug, Copy, Clone)]
         pub struct Vertex {
             x: f32,
             y: f32,
             z: f32,
         }
 
-        #[derive(Debug,Copy,Clone)]
+        #[derive(Debug, Copy, Clone)]
         pub struct Triangle {
             normal: Vertex,
-            vertex:[Vertex; VERTEX_CNT],
+            vertex: [Vertex; VERTEX_CNT],
         }
 
         impl Triangle {
-
             fn new() -> Box<Triangle> {
-                Box::new(Triangle{normal: Vertex{x:0.0, y:0.0, z:0.0}, vertex: Triangle::new_vertex()})
+                Box::new(Triangle {
+                    normal: Vertex {
+                        x: 0.0,
+                        y: 0.0,
+                        z: 0.0,
+                    },
+                    vertex: Triangle::new_vertex(),
+                })
             }
 
             fn new_vertex() -> [Vertex; VERTEX_CNT] {
                 [
-                    Vertex{x:0.0, y:0.0, z:0.0},
-                    Vertex{x:0.0, y:0.0, z:0.0},
-                    Vertex{x:0.0, y:0.0, z:0.0},
+                    Vertex {
+                        x: 0.0,
+                        y: 0.0,
+                        z: 0.0,
+                    },
+                    Vertex {
+                        x: 0.0,
+                        y: 0.0,
+                        z: 0.0,
+                    },
+                    Vertex {
+                        x: 0.0,
+                        y: 0.0,
+                        z: 0.0,
+                    },
                 ]
             }
         }
 
         impl std::fmt::Display for Triangle {
             fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                write!(f, "{:.2} {:.2} {:.2}\n{:.2} {:.2} {:.2}\n{:.2} {:.2} {:.2}\n{:.2} {:.2} {:.2}",
-                       self.normal.x, self.normal.y, self.normal.z,
-                       self.vertex[0].x, self.vertex[0].y, self.vertex[0].z,
-                       self.vertex[1].x, self.vertex[1].y, self.vertex[1].z,
-                       self.vertex[2].x, self.vertex[2].y, self.vertex[2].z )
+                write!(
+                    f,
+                    "{:.2} {:.2} {:.2}\n{:.2} {:.2} {:.2}\n{:.2} {:.2} {:.2}\n{:.2} {:.2} {:.2}",
+                    self.normal.x,
+                    self.normal.y,
+                    self.normal.z,
+                    self.vertex[0].x,
+                    self.vertex[0].y,
+                    self.vertex[0].z,
+                    self.vertex[1].x,
+                    self.vertex[1].y,
+                    self.vertex[1].z,
+                    self.vertex[2].x,
+                    self.vertex[2].y,
+                    self.vertex[2].z
+                )
             }
         }
 
@@ -134,30 +163,32 @@ pub mod stl {
         pub struct Model {
             triangles: Vec<Box<Triangle>>,
         }
-        
+
         impl Model {
             pub fn iter(&self) -> TriangleIterator {
-                TriangleIterator{index:0, model: self}
+                TriangleIterator {
+                    index: 0,
+                    model: self,
+                }
             }
         }
 
         pub struct TriangleIterator<'a> {
-            index: usize, 
+            index: usize,
             model: &'a Model,
         }
 
-        impl <'a>Iterator for TriangleIterator<'a> {
-            
+        impl<'a> Iterator for TriangleIterator<'a> {
             type Item = &'a Box<Triangle>;
 
             fn next(&mut self) -> Option<&'a Box<Triangle>> {
                 if self.index < self.model.triangles.len() {
                     match self.model.triangles.get(self.index) {
                         Some(triangle) => {
-                                            self.index += 1;
-                                            Some(triangle)
-                                          },
-                        None => None
+                            self.index += 1;
+                            Some(triangle)
+                        }
+                        None => None,
                     }
                 } else {
                     None
@@ -170,7 +201,7 @@ pub mod stl {
             println!("format {:?}", stl_fmt);
             match stl_fmt {
                 FileFormat::Binary => load_bin_file(stl_file_path),
-                FileFormat::Text   => load_txt_file(stl_file_path), 
+                FileFormat::Text => load_txt_file(stl_file_path),
             }
         }
 
@@ -179,10 +210,19 @@ pub mod stl {
 
         fn load_txt_file(stl_file_path: &String) -> Result<Box<Model>, Error> {
             let stl_file = File::open(stl_file_path).map_err(Error::InvalidPath)?;
-            let mut file = BufReader::new(&stl_file);    
+            let mut file = BufReader::new(&stl_file);
 
-            let mut model = Box::new(Model{triangles: Vec::new()});
-            let mut triangle = Triangle{normal: Vertex{x:0.0, y:0.0, z:0.0}, vertex: Triangle::new_vertex()};
+            let mut model = Box::new(Model {
+                triangles: Vec::new(),
+            });
+            let mut triangle = Triangle {
+                normal: Vertex {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+                vertex: Triangle::new_vertex(),
+            };
             let mut vertex: usize = 0;
 
             loop {
@@ -192,9 +232,9 @@ pub mod stl {
                 if line.is_empty() {
                     break;
                 }
-                
-                let tokens:Vec<&str> = line.trim().split(' ').collect();
-                
+
+                let tokens: Vec<&str> = line.trim().split(' ').collect();
+
                 if tokens[0] == "facet" {
                     vertex = 0;
                     if tokens.len() == 5 {
@@ -206,9 +246,9 @@ pub mod stl {
 
                 if tokens[0] == "vertex" {
                     if tokens.len() == 4 {
-                        triangle.vertex[vertex].x =  tokens[1].parse::<f32>().unwrap();
-                        triangle.vertex[vertex].y =  tokens[2].parse::<f32>().unwrap();
-                        triangle.vertex[vertex].z =  tokens[3].parse::<f32>().unwrap();
+                        triangle.vertex[vertex].x = tokens[1].parse::<f32>().unwrap();
+                        triangle.vertex[vertex].y = tokens[2].parse::<f32>().unwrap();
+                        triangle.vertex[vertex].z = tokens[3].parse::<f32>().unwrap();
                         vertex += 1;
                     }
                 }
@@ -227,26 +267,30 @@ pub mod stl {
         fn load_vertex(buf: &[u8], vertex: &mut Vertex, offset: &mut usize) {
             vertex.x = LittleEndian::read_f32(&buf[*offset..*offset + F32_SIZE]);
             *offset += F32_SIZE;
-        
+
             vertex.y = LittleEndian::read_f32(&buf[*offset..*offset + F32_SIZE]);
             *offset += F32_SIZE;
-            
+
             vertex.z = LittleEndian::read_f32(&buf[*offset..*offset + F32_SIZE]);
             *offset += F32_SIZE;
         }
 
         fn load_bin_file(stl_file_path: &String) -> Result<Box<Model>, Error> {
             let mut stl_file = File::open(stl_file_path).map_err(Error::InvalidPath)?;
-            
+
             let mut triangle_byte_vec = Vec::new();
-            stl_file.read_to_end(&mut triangle_byte_vec).map_err(Error::InvalidRead)?;
+            stl_file
+                .read_to_end(&mut triangle_byte_vec)
+                .map_err(Error::InvalidRead)?;
             let buf = triangle_byte_vec.as_slice();
-            
+
             let mut offset = HEADER_SIZE;
-            let triangle_cnt = LittleEndian::read_u32(&buf[offset..offset + F32_SIZE]); 
-            offset += F32_SIZE; 
-        
-            let mut model = Box::new(Model{triangles: Vec::new()});
+            let triangle_cnt = LittleEndian::read_u32(&buf[offset..offset + F32_SIZE]);
+            offset += F32_SIZE;
+
+            let mut model = Box::new(Model {
+                triangles: Vec::new(),
+            });
             for _ in 0..triangle_cnt {
                 let mut triangle = Triangle::new();
 

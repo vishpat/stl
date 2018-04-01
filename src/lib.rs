@@ -259,13 +259,11 @@ pub mod stl {
                     }
                 }
 
-                if tokens[0] == "vertex" {
-                    if tokens.len() == 4 {
-                        triangle.vertex[vertex].x = tokens[1].parse::<f32>().unwrap();
-                        triangle.vertex[vertex].y = tokens[2].parse::<f32>().unwrap();
-                        triangle.vertex[vertex].z = tokens[3].parse::<f32>().unwrap();
-                        vertex += 1;
-                    }
+                if tokens[0] == "vertex" && tokens.len() == 4 {
+                    triangle.vertex[vertex].x = tokens[1].parse::<f32>().unwrap();
+                    triangle.vertex[vertex].y = tokens[2].parse::<f32>().unwrap();
+                    triangle.vertex[vertex].z = tokens[3].parse::<f32>().unwrap();
+                    vertex += 1;
                 }
 
                 if tokens[0] == "endfacet" {

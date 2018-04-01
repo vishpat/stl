@@ -3,7 +3,6 @@ extern crate byteorder;
 #[cfg(test)]
 mod tests {
     use stl;
-    use std::slice::Iter;
 
     #[test]
     fn binary_format_check() {
@@ -78,14 +77,14 @@ pub mod stl {
             }
         }
 
-        #[derive(Debug)]
+        #[derive(Debug,Copy,Clone)]
         pub struct Vertex {
             x: f32,
             y: f32,
             z: f32,
         }
 
-        #[derive(Debug)]
+        #[derive(Debug,Copy,Clone)]
         pub struct Triangle {
             normal: Vertex,
             vertex:[Vertex; VERTEX_CNT],
@@ -159,6 +158,54 @@ pub mod stl {
             }
         }
 
+        use std::io::BufReader;
+        use std::io::BufRead;
+
+        fn load_txt_file(stl_file_path: &String) -> Result<Box<Model>, Error> {
+            let stl_file = File::open(stl_file_path).map_err(Error::InvalidPath)?;
+            let mut file = BufReader::new(&stl_file);    
+
+            let mut model = Box::new(Model{triangles: Vec::new()});
+            let mut triangle = Triangle{normal: Vertex{x:0.0, y:0.0, z:0.0}, vertex: Triangle::new_vertex()};
+            let mut vertex: usize = 0;
+
+            loop {
+                let mut line = String::new();
+                file.read_line(&mut line).map_err(Error::InvalidRead)?;
+                
+                if line.is_empty() {
+                    break;
+                }
+                
+                let tokens:Vec<&str> = line.split(' ').collect();
+                
+                if tokens[0] == "facet" {
+                    vertex = 0;
+                    if tokens.len() == 5 {
+                        triangle.normal.x = tokens[2].parse::<f32>().unwrap();
+                        triangle.normal.y = tokens[3].parse::<f32>().unwrap();
+                        triangle.normal.z = tokens[4].parse::<f32>().unwrap();
+                    }
+                }
+
+                if tokens[0] == "vertex" {
+                    if tokens.len() == 4 {
+                        triangle.vertex[vertex].x =  tokens[1].parse::<f32>().unwrap();
+                        triangle.vertex[vertex].y =  tokens[2].parse::<f32>().unwrap();
+                        triangle.vertex[vertex].z =  tokens[3].parse::<f32>().unwrap();
+                        vertex += 1;
+                    }
+                }
+
+                if tokens[0] == "endfacet" {
+                    let mut triangle2 = triangle;
+                    model.triangles.push(Box::new(triangle2));
+                }
+            }
+
+            Ok(model)
+        }
+
         use byteorder::LittleEndian;
         use byteorder::ByteOrder;
 
@@ -174,17 +221,17 @@ pub mod stl {
         }
 
         fn load_bin_file(stl_file_path: &String) -> Result<Box<Model>, Error> {
-            
-            let mut model = Box::new(Model{triangles: Vec::new()});
-            let mut triangle_byte_vec = Vec::new();
             let mut stl_file = File::open(stl_file_path).map_err(Error::InvalidPath)?;
+            
+            let mut triangle_byte_vec = Vec::new();
             stl_file.read_to_end(&mut triangle_byte_vec).map_err(Error::InvalidRead)?;
-
             let buf = triangle_byte_vec.as_slice();
+            
             let mut offset = HEADER_SIZE;
             let triangle_cnt = LittleEndian::read_u32(&buf[offset..offset + F32_SIZE]); 
             offset += F32_SIZE; 
         
+            let mut model = Box::new(Model{triangles: Vec::new()});
             for triangle_idx in 0..triangle_cnt {
                 let mut triangle = Triangle::new();
 

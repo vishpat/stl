@@ -1,5 +1,5 @@
 [package]
-name = "stl"
+name = "stl-parser"
 version = "0.1.0"
 authors = ["Vishal Patil <vishpat@gmail.com>"]
 license = "MIT"

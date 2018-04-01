@@ -4,8 +4,8 @@ extern crate byteorder;
 mod tests {
     use stl;
 
-    const bin_stl_file:&str = "/home/vpati011/Downloads/HalfDonut.stl";
-    const txt_stl_file:&str = "/home/vpati011/Downloads/HalfDonut.txt.stl";
+    const bin_stl_file:&str = "/home/vishpat/Downloads/HalfDonut.stl";
+    const txt_stl_file:&str = "/home/vishpat/Downloads/HalfDonut.txt.stl";
 
     #[test]
     fn binary_format_check() {
@@ -29,7 +29,6 @@ mod tests {
     fn binary_stl_load() {
         match stl::parser::load_file(&bin_stl_file.to_string()) {
             Ok(model) => { 
-                println!("Triangle count");
                 let mut idx = 0;
                 for triangle in (*model).iter() {
                     println!("Triangle {}\n{}", idx, triangle);
@@ -44,7 +43,6 @@ mod tests {
     fn text_stl_load() {
         match stl::parser::load_file(&txt_stl_file.to_string()) {
             Ok(model) => { 
-                println!("Triangle count");
                 let mut idx = 0;
                 for triangle in (*model).iter() {
                     println!("Triangle {}\n{}", idx, triangle);
@@ -54,9 +52,6 @@ mod tests {
             _ => panic!("Failed to parse the binary STL file"),
         }
     }
-
-
-    
 }
 
 pub mod stl {

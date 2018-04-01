@@ -4,12 +4,24 @@ extern crate byteorder;
 mod tests {
     use stl;
 
+    const bin_stl_file:&str = "/home/vpati011/Downloads/HalfDonut.stl";
+    const txt_stl_file:&str = "/home/vpati011/Downloads/HalfDonut.txt.stl";
+
     #[test]
     fn binary_format_check() {
-        let fmt = stl::parser::get_format(&"/home/vpati011/Downloads/HalfDonut.stl".to_string());
+        let fmt = stl::parser::get_format(&bin_stl_file.to_string());
         match fmt {
-            Ok(format) => println!("Pass"),
+            Ok(Binary) => println!("Pass: Binary format"),
             _ => panic!("Test failed to detect the binary format for the STL file"),
+        }
+    }
+
+    #[test]
+    fn text_format_check() {
+        let fmt = stl::parser::get_format(&txt_stl_file.to_string());
+        match fmt {
+            Ok(Text) => println!("Pass: Text format"),
+            _ => panic!("Test failed for detect the text format for the STL file"),
         }
     }
 
@@ -29,13 +41,20 @@ mod tests {
     }
 
     #[test]
-    fn text_format_check() {
-        let fmt = stl::parser::get_format(&"/home/vpati011/Downloads/cube.stl".to_string());
-        match fmt {
-            Ok(format) => println!("Pass"),
-            _ => panic!("Test failed for detect the text format for the STL file"),
+    fn text_stl_load() {
+        match stl::parser::load_file(&"/home/vpati011/Downloads/HalfDonut.txt.stl".to_string()) {
+            Ok(model) => { 
+                println!("Triangle count");
+                let mut idx = 0;
+                for triangle in (*model).iter() {
+                    println!("Triangle {}\n{}", idx, triangle);
+                    idx += 1;
+                }
+            }
+            _ => panic!("Failed to parse the binary STL file"),
         }
     }
+
 
     
 }
@@ -52,6 +71,7 @@ pub mod stl {
         const VERTEX_CNT: usize = 3;
         const F32_SIZE: usize = 4;
 
+        #[derive(Debug)]
         pub enum FileFormat {
             Text,
             Binary,
@@ -152,9 +172,10 @@ pub mod stl {
 
         pub fn load_file(stl_file_path: &String) -> Result<Box<Model>, Error> {
             let stl_fmt = get_format(stl_file_path)?;
+            println!("format {:?}", stl_fmt);
             match stl_fmt {
-                Binary => load_bin_file(stl_file_path),
-                Text => panic!("Not implemented")
+                FileFormat::Binary => load_bin_file(stl_file_path),
+                FileFormat::Text   => load_txt_file(stl_file_path), 
             }
         }
 
@@ -172,12 +193,12 @@ pub mod stl {
             loop {
                 let mut line = String::new();
                 file.read_line(&mut line).map_err(Error::InvalidRead)?;
-                
+
                 if line.is_empty() {
                     break;
                 }
                 
-                let tokens:Vec<&str> = line.split(' ').collect();
+                let tokens:Vec<&str> = line.trim().split(' ').collect();
                 
                 if tokens[0] == "facet" {
                     vertex = 0;
@@ -231,7 +252,7 @@ pub mod stl {
             offset += F32_SIZE; 
         
             let mut model = Box::new(Model{triangles: Vec::new()});
-            for triangle_idx in 0..triangle_cnt {
+            for _ in 0..triangle_cnt {
                 let mut triangle = Triangle::new();
 
                 /* Normal Vector */

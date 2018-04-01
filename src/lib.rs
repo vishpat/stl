@@ -310,11 +310,11 @@ pub mod stl {
                 let mut triangle = Triangle::new();
 
                 /* Normal Vector */
-                load_vertex(&buf, &mut triangle.normal, &mut offset);
+                load_vertex(buf, &mut triangle.normal, &mut offset);
 
                 /* Triangle Side vertices */
                 for v in 0..VERTEX_CNT {
-                    load_vertex(&buf, &mut triangle.vertex[v], &mut offset);
+                    load_vertex(buf, &mut triangle.vertex[v], &mut offset);
                 }
 
                 offset += 2;

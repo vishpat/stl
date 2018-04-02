@@ -83,7 +83,7 @@ pub mod stl {
         }
 
         /// Determines if an STL file is in text or a binary format
-        pub fn get_format(stl_file_path: &String) -> Result<FileFormat, Error> {
+        pub fn get_format(stl_file_path: &str) -> Result<FileFormat, Error> {
             let mut stl_file = File::open(stl_file_path).map_err(self::Error::InvalidPath)?;
             let mut buf = [0; HEADER_SIZE];
 
@@ -211,7 +211,7 @@ pub mod stl {
         }
 
         /// Load a STL file and return the Model struct
-        pub fn load_file(stl_file_path: &String) -> Result<Box<Model>, Error> {
+        pub fn load_file(stl_file_path: &str) -> Result<Box<Model>, Error> {
             let stl_fmt = get_format(stl_file_path)?;
             println!("format {:?}", stl_fmt);
             match stl_fmt {
@@ -223,7 +223,7 @@ pub mod stl {
         use std::io::BufReader;
         use std::io::BufRead;
 
-        fn load_txt_file(stl_file_path: &String) -> Result<Box<Model>, Error> {
+        fn load_txt_file(stl_file_path: &str) -> Result<Box<Model>, Error> {
             let stl_file = File::open(stl_file_path).map_err(self::Error::InvalidPath)?;
             let mut file = BufReader::new(&stl_file);
 
@@ -259,13 +259,11 @@ pub mod stl {
                     }
                 }
 
-                if tokens[0] == "vertex" {
-                    if tokens.len() == 4 {
-                        triangle.vertex[vertex].x = tokens[1].parse::<f32>().unwrap();
-                        triangle.vertex[vertex].y = tokens[2].parse::<f32>().unwrap();
-                        triangle.vertex[vertex].z = tokens[3].parse::<f32>().unwrap();
-                        vertex += 1;
-                    }
+                if tokens[0] == "vertex" && tokens.len() == 4 {
+                    triangle.vertex[vertex].x = tokens[1].parse::<f32>().unwrap();
+                    triangle.vertex[vertex].y = tokens[2].parse::<f32>().unwrap();
+                    triangle.vertex[vertex].z = tokens[3].parse::<f32>().unwrap();
+                    vertex += 1;
                 }
 
                 if tokens[0] == "endfacet" {
@@ -290,7 +288,7 @@ pub mod stl {
             *offset += F32_SIZE;
         }
 
-        fn load_bin_file(stl_file_path: &String) -> Result<Box<Model>, Error> {
+        fn load_bin_file(stl_file_path: &str) -> Result<Box<Model>, Error> {
             let mut stl_file = File::open(stl_file_path).map_err(self::Error::InvalidPath)?;
 
             let mut triangle_byte_vec = Vec::new();
@@ -310,11 +308,11 @@ pub mod stl {
                 let mut triangle = Triangle::new();
 
                 /* Normal Vector */
-                load_vertex(&buf, &mut triangle.normal, &mut offset);
+                load_vertex(buf, &mut triangle.normal, &mut offset);
 
                 /* Triangle Side vertices */
                 for v in 0..VERTEX_CNT {
-                    load_vertex(&buf, &mut triangle.vertex[v], &mut offset);
+                    load_vertex(buf, &mut triangle.vertex[v], &mut offset);
                 }
 
                 offset += 2;

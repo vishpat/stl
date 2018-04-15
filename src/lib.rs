@@ -4,8 +4,8 @@ extern crate byteorder;
 mod tests {
     use parser;
 
-    const bin_stl_file: &str = "/home/vishpat/Downloads/HalfDonut.stl";
-    const txt_stl_file: &str = "/home/vishpat/Downloads/HalfDonut.txt.stl";
+    const bin_stl_file: &str = "/home/vishpat/Downloads/HalfDonut-binary.stl";
+    const txt_stl_file: &str = "/home/vishpat/Downloads/HalfDonut.stl";
 
     #[test]
     fn binary_format_check() {
@@ -173,13 +173,19 @@ pub mod parser {
     }
 
     impl Model {
+        pub fn iter(&self) -> TriangleIterator {
+            TriangleIterator{index: 0, model:&self}
+        }
+    }
+
+    impl<'a> IntoIterator for &'a Model {
+        type Item = &'a Triangle;
+        type IntoIter = TriangleIterator<'a>;
+
         /// Iterator to iterate over all the triangles that
         /// make up the 3D object
-        pub fn iter(&self) -> TriangleIterator {
-            TriangleIterator {
-                index: 0,
-                model: self,
-            }
+        fn into_iter(self) -> Self::IntoIter {
+            self.iter()
         }
     }
 

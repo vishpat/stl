@@ -4,8 +4,8 @@ extern crate byteorder;
 mod tests {
     use parser;
 
-    const bin_stl_file: &str = "/home/vishpat/Downloads/HalfDonut-binary.stl";
-    const txt_stl_file: &str = "/home/vishpat/Downloads/HalfDonut.stl";
+    const bin_stl_file: &str = "/home/vpati011/Downloads/HalfDonut-binary.stl";
+    const txt_stl_file: &str = "/home/vpati011/Downloads/HalfDonut.stl";
 
     #[test]
     fn binary_format_check() {
@@ -54,7 +54,7 @@ mod tests {
     }
 }
 
-/// A RUST module to parse STL files. The format of the STL 
+/// A RUST module to parse STL files. The format of the STL
 /// file can be found at https://en.wikipedia.org/wiki/STL_(file_format)
 pub mod parser {
 
@@ -143,6 +143,40 @@ pub mod parser {
                 },
             ]
         }
+
+        pub fn calculate_normal(&mut self) {
+            let mut length = 0.0;
+            let mut U = Vertex {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            };
+            let mut V = Vertex {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            };
+
+            U.x = self.vertex[1].x - self.vertex[0].x;
+            U.y = self.vertex[1].y - self.vertex[0].y;
+            U.z = self.vertex[1].z - self.vertex[0].z;
+
+            V.x = self.vertex[2].x - self.vertex[0].x;
+            V.y = self.vertex[2].y - self.vertex[0].y;
+            V.z = self.vertex[2].z - self.vertex[0].z;
+
+            self.normal.x = U.y * V.z - U.z * V.y;
+            self.normal.y = U.z * V.x - U.x * V.z;
+            self.normal.z = U.x * V.y - U.y * V.x;
+
+            length = self.normal.x * self.normal.x + self.normal.y * self.normal.y
+                + self.normal.z * self.normal.z;
+            length = length.sqrt();
+
+            self.normal.x = self.normal.x / length;
+            self.normal.y = self.normal.y / length;
+            self.normal.z = self.normal.z / length;
+        }
     }
 
     impl std::fmt::Display for Triangle {
@@ -166,7 +200,7 @@ pub mod parser {
         }
     }
 
-    /// Representation of the 3D object in terms of triangles 
+    /// Representation of the 3D object in terms of triangles
     #[derive(Debug)]
     pub struct Model {
         triangles: Vec<Triangle>,
@@ -174,7 +208,10 @@ pub mod parser {
 
     impl Model {
         pub fn iter(&self) -> TriangleIterator {
-            TriangleIterator{index: 0, model:&self}
+            TriangleIterator {
+                index: 0,
+                model: &self,
+            }
         }
     }
 
@@ -189,7 +226,7 @@ pub mod parser {
         }
     }
 
-    /// The iterator for all the triangles making up the 3D 
+    /// The iterator for all the triangles making up the 3D
     /// object
     pub struct TriangleIterator<'a> {
         index: usize,
@@ -275,6 +312,8 @@ pub mod parser {
             }
         }
 
+        model.triangles.iter_mut().for_each(|triangle| triangle.calculate_normal());
+
         Ok(model)
     }
 
@@ -323,6 +362,8 @@ pub mod parser {
 
             model.triangles.push(triangle);
         }
+
+        model.triangles.iter_mut().for_each(|triangle| triangle.calculate_normal());
 
         Ok(model)
     }

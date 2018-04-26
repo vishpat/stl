@@ -1,4 +1,7 @@
 extern crate byteorder;
+extern crate rayon;
+
+
 
 #[cfg(test)]
 mod tests {
@@ -61,6 +64,7 @@ pub mod parser {
     use std::fs::File;
     use std::io::Read;
     use std;
+    use rayon::prelude::*;
 
     const HEADER_SIZE: usize = 80;
     const VERTEX_CNT: usize = 3;
@@ -213,6 +217,10 @@ pub mod parser {
                 model: &self,
             }
         }
+
+        pub fn calculate_normals(&mut self) {
+            self.triangles.par_iter_mut().map(|triangle| triangle.calculate_normal());
+        }
     }
 
     impl<'a> IntoIterator for &'a Model {
@@ -312,7 +320,7 @@ pub mod parser {
             }
         }
 
-        model.triangles.iter_mut().for_each(|triangle| triangle.calculate_normal());
+        model.calculate_normals();
 
         Ok(model)
     }
@@ -363,7 +371,7 @@ pub mod parser {
             model.triangles.push(triangle);
         }
 
-        model.triangles.iter_mut().for_each(|triangle| triangle.calculate_normal());
+        model.calculate_normals();
 
         Ok(model)
     }

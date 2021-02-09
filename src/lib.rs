@@ -1,5 +1,4 @@
 extern crate byteorder;
-extern crate rayon;
 
 
 
@@ -7,30 +6,30 @@ extern crate rayon;
 mod tests {
     use parser;
 
-    const bin_stl_file: &str = "/Users/vpatil3/tmp/Cube_3d_printing_sample.stl";
-    const txt_stl_file: &str = "/Users/vpatil3/tmp/bottle.stl";
+    const BIN_STL_FILE: &str = "/Users/vpatil3/tmp/Cube_3d_printing_sample.stl";
+    const TXT_STL_FILE: &str = "/Users/vpatil3/tmp/bottle.stl";
 
     #[test]
     fn binary_format_check() {
-        let fmt = parser::get_format(&bin_stl_file.to_string());
+        let fmt = parser::get_format(&BIN_STL_FILE.to_string());
         match fmt {
-            Ok(Binary) => println!("Pass: Binary format"),
+            Ok(parser::FileFormat::Binary) => println!("Pass: Binary format"),
             _ => panic!("Test failed to detect the binary format for the STL file"),
         }
     }
 
     #[test]
     fn text_format_check() {
-        let fmt = parser::get_format(&txt_stl_file.to_string());
+        let fmt = parser::get_format(&TXT_STL_FILE.to_string());
         match fmt {
-            Ok(Text) => println!("Pass: Text format"),
+            Ok(parser::FileFormat::Text) => println!("Pass: Text format"),
             _ => panic!("Test failed for detect the text format for the STL file"),
         }
     }
 
     #[test]
     fn binary_stl_load() {
-        match parser::load_file(&bin_stl_file.to_string()) {
+        match parser::load_file(&BIN_STL_FILE.to_string()) {
             Ok(model) => {
                 let mut idx = 0;
                 for triangle in (*model).iter() {
@@ -44,7 +43,7 @@ mod tests {
 
     #[test]
     fn text_stl_load() {
-        match parser::load_file(&txt_stl_file.to_string()) {
+        match parser::load_file(&TXT_STL_FILE.to_string()) {
             Ok(model) => {
                 let mut idx = 0;
                 for triangle in (*model).iter() {
@@ -58,7 +57,7 @@ mod tests {
 
     #[test]
     fn triangle_count() {
-        match parser::load_file(&txt_stl_file.to_string()) {
+        match parser::load_file(&TXT_STL_FILE.to_string()) {
             Ok(model) => {
                 println!("{}", model.triangle_count());
             }
@@ -68,7 +67,7 @@ mod tests {
 
     #[test]
     fn triangle_vertices() {
-        match parser::load_file(&txt_stl_file.to_string()) {
+        match parser::load_file(&TXT_STL_FILE.to_string()) {
             Ok(model) => {
                 let mut idx = 0;
                 for triangle in (*model).iter() {
@@ -88,7 +87,6 @@ pub mod parser {
     use std::fs::File;
     use std::io::Read;
     use std;
-    use rayon::prelude::*;
 
     const HEADER_SIZE: usize = 80;
     const VERTEX_CNT: usize = 3;
@@ -250,7 +248,9 @@ pub mod parser {
         }
 
         pub fn calculate_normals(&mut self) {
-            self.triangles.par_iter_mut().map(|triangle| triangle.calculate_normal());
+            for triangle in self.triangles.iter_mut() {
+                triangle.calculate_normal();
+            }
         }
     }
 

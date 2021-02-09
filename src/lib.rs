@@ -1,36 +1,36 @@
 extern crate byteorder;
-extern crate rayon;
 
 
 
 #[cfg(test)]
 mod tests {
     use parser;
+    use parser::Vertex;
 
-    const bin_stl_file: &str = "/home/vpati011/Downloads/HalfDonut-binary.stl";
-    const txt_stl_file: &str = "/home/vpati011/Downloads/HalfDonut.stl";
+    const BIN_STL_FILE: &str = "/Users/vpatil3/tmp/Cube_3d_printing_sample.stl";
+    const TXT_STL_FILE: &str = "/Users/vpatil3/tmp/bottle.stl";
 
     #[test]
     fn binary_format_check() {
-        let fmt = parser::get_format(&bin_stl_file.to_string());
+        let fmt = parser::get_format(&BIN_STL_FILE.to_string());
         match fmt {
-            Ok(Binary) => println!("Pass: Binary format"),
+            Ok(parser::FileFormat::Binary) => println!("Pass: Binary format"),
             _ => panic!("Test failed to detect the binary format for the STL file"),
         }
     }
 
     #[test]
     fn text_format_check() {
-        let fmt = parser::get_format(&txt_stl_file.to_string());
+        let fmt = parser::get_format(&TXT_STL_FILE.to_string());
         match fmt {
-            Ok(Text) => println!("Pass: Text format"),
+            Ok(parser::FileFormat::Text) => println!("Pass: Text format"),
             _ => panic!("Test failed for detect the text format for the STL file"),
         }
     }
 
     #[test]
     fn binary_stl_load() {
-        match parser::load_file(&bin_stl_file.to_string()) {
+        match parser::load_file(&BIN_STL_FILE.to_string()) {
             Ok(model) => {
                 let mut idx = 0;
                 for triangle in (*model).iter() {
@@ -44,12 +44,52 @@ mod tests {
 
     #[test]
     fn text_stl_load() {
-        match parser::load_file(&txt_stl_file.to_string()) {
+        match parser::load_file(&TXT_STL_FILE.to_string()) {
             Ok(model) => {
                 let mut idx = 0;
                 for triangle in (*model).iter() {
                     println!("Triangle {}\n{}", idx, triangle);
                     idx += 1;
+                }
+            }
+            _ => panic!("Failed to parse the text STL file"),
+        }
+    }
+
+    #[test]
+    fn triangle_count() {
+        match parser::load_file(&TXT_STL_FILE.to_string()) {
+            Ok(model) => {
+                println!("{}", model.triangle_count());
+            }
+            _ => panic!("Failed to parse the text STL file"),
+        }
+    }
+
+    #[test]
+    fn triangle_vertices() {
+        match parser::load_file(&TXT_STL_FILE.to_string()) {
+            Ok(model) => {
+                let mut idx = 0;
+                for triangle in (*model).iter() {
+                    println!("Triangle {}\n{:?}", idx, triangle.vertices());
+                    idx += 1;
+                }
+            }
+            _ => panic!("Failed to parse the text STL file"),
+        }
+    }
+
+    #[test]
+    fn vertex_array() {
+        match parser::load_file(&BIN_STL_FILE.to_string()) {
+            Ok(model) => {
+                for triangle in (*model).iter() {
+                    let vertices = triangle.vertices();
+                    let v1: Vertex = vertices[0];
+                    let v2: Vertex = vertices[1];
+                    let v3: Vertex = vertices[2];
+                    println!("{:?} {:?} {:?}", v1, v2, v3);
                 }
             }
             _ => panic!("Failed to parse the text STL file"),
@@ -64,7 +104,6 @@ pub mod parser {
     use std::fs::File;
     use std::io::Read;
     use std;
-    use rayon::prelude::*;
 
     const HEADER_SIZE: usize = 80;
     const VERTEX_CNT: usize = 3;
@@ -109,6 +148,20 @@ pub mod parser {
         z: f32,
     }
 
+    impl Vertex {
+        pub fn get_x(&self) -> f32 {
+            self.x
+        }
+
+        pub fn get_y(&self) -> f32 {
+            self.y
+        }
+
+        pub fn get_z(&self) -> f32 {
+            self.z
+        }
+    }
+
     /// Represents a triangle that makes up the 3D object
     #[derive(Debug, Copy, Clone)]
     pub struct Triangle {
@@ -126,6 +179,10 @@ pub mod parser {
                 },
                 vertex: Triangle::new_vertices(),
             }
+        }
+
+        pub fn vertices(&self) -> &[Vertex; VERTEX_CNT] {
+            return &self.vertex;
         }
 
         fn new_vertices() -> [Vertex; VERTEX_CNT] {
@@ -149,31 +206,30 @@ pub mod parser {
         }
 
         pub fn calculate_normal(&mut self) {
-            let mut length = 0.0;
-            let mut U = Vertex {
+            let mut u = Vertex {
                 x: 0.0,
                 y: 0.0,
                 z: 0.0,
             };
-            let mut V = Vertex {
+            let mut v = Vertex {
                 x: 0.0,
                 y: 0.0,
                 z: 0.0,
             };
 
-            U.x = self.vertex[1].x - self.vertex[0].x;
-            U.y = self.vertex[1].y - self.vertex[0].y;
-            U.z = self.vertex[1].z - self.vertex[0].z;
+            u.x = self.vertex[1].x - self.vertex[0].x;
+            u.y = self.vertex[1].y - self.vertex[0].y;
+            u.z = self.vertex[1].z - self.vertex[0].z;
 
-            V.x = self.vertex[2].x - self.vertex[0].x;
-            V.y = self.vertex[2].y - self.vertex[0].y;
-            V.z = self.vertex[2].z - self.vertex[0].z;
+            v.x = self.vertex[2].x - self.vertex[0].x;
+            v.y = self.vertex[2].y - self.vertex[0].y;
+            v.z = self.vertex[2].z - self.vertex[0].z;
 
-            self.normal.x = U.y * V.z - U.z * V.y;
-            self.normal.y = U.z * V.x - U.x * V.z;
-            self.normal.z = U.x * V.y - U.y * V.x;
+            self.normal.x = u.y * v.z - u.z * v.y;
+            self.normal.y = u.z * v.x - u.x * v.z;
+            self.normal.z = u.x * v.y - u.y * v.x;
 
-            length = self.normal.x * self.normal.x + self.normal.y * self.normal.y
+            let mut length = self.normal.x * self.normal.x + self.normal.y * self.normal.y
                 + self.normal.z * self.normal.z;
             length = length.sqrt();
 
@@ -218,8 +274,14 @@ pub mod parser {
             }
         }
 
+        pub fn triangle_count(&self) -> usize {
+            self.triangles.len()
+        }
+
         pub fn calculate_normals(&mut self) {
-            self.triangles.par_iter_mut().map(|triangle| triangle.calculate_normal());
+            for triangle in self.triangles.iter_mut() {
+                triangle.calculate_normal();
+            }
         }
     }
 
@@ -297,7 +359,7 @@ pub mod parser {
                 break;
             }
 
-            let tokens: Vec<&str> = line.trim().split(' ').collect();
+            let tokens: Vec<&str> = line.trim().split_whitespace().collect();
 
             if tokens[0] == "facet" {
                 vertex = 0;

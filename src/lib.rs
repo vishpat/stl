@@ -7,8 +7,8 @@ extern crate rayon;
 mod tests {
     use parser;
 
-    const bin_stl_file: &str = "/home/vpati011/Downloads/HalfDonut-binary.stl";
-    const txt_stl_file: &str = "/home/vpati011/Downloads/HalfDonut.stl";
+    const bin_stl_file: &str = "/Users/vpatil3/tmp/Cube_3d_printing_sample.stl";
+    const txt_stl_file: &str = "/Users/vpatil3/tmp/bottle.stl";
 
     #[test]
     fn binary_format_check() {
@@ -49,6 +49,20 @@ mod tests {
                 let mut idx = 0;
                 for triangle in (*model).iter() {
                     println!("Triangle {}\n{}", idx, triangle);
+                    idx += 1;
+                }
+            }
+            _ => panic!("Failed to parse the text STL file"),
+        }
+    }
+
+    #[test]
+    fn triangle_vertices() {
+        match parser::load_file(&txt_stl_file.to_string()) {
+            Ok(model) => {
+                let mut idx = 0;
+                for triangle in (*model).iter() {
+                    println!("Triangle {}\n{:?}", idx, triangle.vertices());
                     idx += 1;
                 }
             }
@@ -128,6 +142,10 @@ pub mod parser {
             }
         }
 
+        pub fn vertices(&self) -> &[Vertex; VERTEX_CNT] {
+            return &self.vertex;
+        }
+
         fn new_vertices() -> [Vertex; VERTEX_CNT] {
             [
                 Vertex {
@@ -149,31 +167,30 @@ pub mod parser {
         }
 
         pub fn calculate_normal(&mut self) {
-            let mut length = 0.0;
-            let mut U = Vertex {
+            let mut u = Vertex {
                 x: 0.0,
                 y: 0.0,
                 z: 0.0,
             };
-            let mut V = Vertex {
+            let mut v = Vertex {
                 x: 0.0,
                 y: 0.0,
                 z: 0.0,
             };
 
-            U.x = self.vertex[1].x - self.vertex[0].x;
-            U.y = self.vertex[1].y - self.vertex[0].y;
-            U.z = self.vertex[1].z - self.vertex[0].z;
+            u.x = self.vertex[1].x - self.vertex[0].x;
+            u.y = self.vertex[1].y - self.vertex[0].y;
+            u.z = self.vertex[1].z - self.vertex[0].z;
 
-            V.x = self.vertex[2].x - self.vertex[0].x;
-            V.y = self.vertex[2].y - self.vertex[0].y;
-            V.z = self.vertex[2].z - self.vertex[0].z;
+            v.x = self.vertex[2].x - self.vertex[0].x;
+            v.y = self.vertex[2].y - self.vertex[0].y;
+            v.z = self.vertex[2].z - self.vertex[0].z;
 
-            self.normal.x = U.y * V.z - U.z * V.y;
-            self.normal.y = U.z * V.x - U.x * V.z;
-            self.normal.z = U.x * V.y - U.y * V.x;
+            self.normal.x = u.y * v.z - u.z * v.y;
+            self.normal.y = u.z * v.x - u.x * v.z;
+            self.normal.z = u.x * v.y - u.y * v.x;
 
-            length = self.normal.x * self.normal.x + self.normal.y * self.normal.y
+            let mut length = self.normal.x * self.normal.x + self.normal.y * self.normal.y
                 + self.normal.z * self.normal.z;
             length = length.sqrt();
 
@@ -297,7 +314,7 @@ pub mod parser {
                 break;
             }
 
-            let tokens: Vec<&str> = line.trim().split(' ').collect();
+            let tokens: Vec<&str> = line.trim().split_whitespace().collect();
 
             if tokens[0] == "facet" {
                 vertex = 0;

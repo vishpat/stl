@@ -5,6 +5,7 @@ extern crate byteorder;
 #[cfg(test)]
 mod tests {
     use parser;
+    use parser::Vertex;
 
     const BIN_STL_FILE: &str = "/Users/vpatil3/tmp/Cube_3d_printing_sample.stl";
     const TXT_STL_FILE: &str = "/Users/vpatil3/tmp/bottle.stl";
@@ -78,6 +79,22 @@ mod tests {
             _ => panic!("Failed to parse the text STL file"),
         }
     }
+
+    #[test]
+    fn vertex_array() {
+        match parser::load_file(&BIN_STL_FILE.to_string()) {
+            Ok(model) => {
+                for triangle in (*model).iter() {
+                    let vertices = triangle.vertices();
+                    let v1: Vertex = vertices[0];
+                    let v2: Vertex = vertices[1];
+                    let v3: Vertex = vertices[2];
+                    println!("{:?} {:?} {:?}", v1, v2, v3);
+                }
+            }
+            _ => panic!("Failed to parse the text STL file"),
+        }
+    }
 }
 
 /// A RUST module to parse STL files. The format of the STL
@@ -129,6 +146,20 @@ pub mod parser {
         x: f32,
         y: f32,
         z: f32,
+    }
+
+    impl Vertex {
+        pub fn get_x(&self) -> f32 {
+            self.x
+        }
+
+        pub fn get_y(&self) -> f32 {
+            self.y
+        }
+
+        pub fn get_z(&self) -> f32 {
+            self.z
+        }
     }
 
     /// Represents a triangle that makes up the 3D object

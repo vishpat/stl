@@ -57,6 +57,16 @@ mod tests {
     }
 
     #[test]
+    fn triangle_count() {
+        match parser::load_file(&txt_stl_file.to_string()) {
+            Ok(model) => {
+                println!("{}", model.triangle_count());
+            }
+            _ => panic!("Failed to parse the text STL file"),
+        }
+    }
+
+    #[test]
     fn triangle_vertices() {
         match parser::load_file(&txt_stl_file.to_string()) {
             Ok(model) => {
@@ -233,6 +243,10 @@ pub mod parser {
                 index: 0,
                 model: &self,
             }
+        }
+
+        pub fn triangle_count(&self) -> usize {
+            self.triangles.len()
         }
 
         pub fn calculate_normals(&mut self) {
